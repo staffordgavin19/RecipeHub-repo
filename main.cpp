@@ -13,9 +13,15 @@ class Recipe {
         Recipe(string t, string i, string instr) : title(t), ingredients(i), instructions(instr) {}
 
         void displayRecipe() {
-            cout << "\nRecipe: " << title << "\n";
-            cout << "Ingredients: " << ingredients << "\n";
-            cout << "Instructions: " << instructions << "\n";
+            cout << "\n===============================" << endl;
+            cout << "        Recipe: " << title << endl;
+            cout << "-------------------------------" << endl;
+            cout << "Ingredients: " << endl;
+            cout << ingredients << endl;
+            cout << "-------------------------------" << endl;
+            cout << "Instructions: " << endl;
+            cout << instructions << endl;
+            cout << "===============================" << endl;
         }
 };
 
@@ -35,10 +41,13 @@ void saveRecipe(const Recipe& recipe) {
 }
 
 void showMenu() {
-    cout << "\nRecipeHub - Main Menu\n";
-    cout << "1. Add Recipe\n";
-    cout << "2. View Recipes\n";
-    cout << "3. Exit\n";
+    cout << "\n===============================" << endl;
+    cout << "           RecipeHub Menu       " << endl;
+    cout << "===============================" << endl;
+    cout << "1. Add Recipe" << endl;
+    cout << "2. View Recipes" << endl;
+    cout << "3. Exit" << endl;
+    cout << "===============================" << endl;
     cout << "Enter your choice: ";
 }
 
@@ -46,13 +55,16 @@ void viewRecipes() {
     ifstream file("recipes.txt");
     string line;
     if (file.is_open()) {
-        cout << "\nSaved Recipes:\n";
+        cout << "\n===============================" << endl;
+        cout << "        Saved Recipes          " << endl;
+        cout << "===============================" << endl;
         while (getline(file, line)) {
             if (line.find("### RECIPE START ###") != string::npos) {
                 cout << "\n------------------------\n";
             }
             cout << line << endl;
         }
+        cout << "===============================" << endl;
         file.close();
     } else {
         cout << "No recipes found.\n";
@@ -80,6 +92,9 @@ int main() {
         }
         else if (choice == 2) {
             viewRecipes();
+        }
+        else if (choice != 3) {
+            cout << "\n*** Invalid choice. Please try again. ***\n";
         }
     } while (choice != 3);
 
