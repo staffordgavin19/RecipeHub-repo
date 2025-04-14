@@ -41,34 +41,100 @@ void saveRecipe(const Recipe& recipe) {
 }
 
 void showMenu() {
-    cout << "\n===============================" << endl;
-    cout << "           RecipeHub Menu       " << endl;
-    cout << "===============================" << endl;
-    cout << "1. Add Recipe" << endl;
-    cout << "2. View Recipes" << endl;
-    cout << "3. Exit" << endl;
-    cout << "===============================" << endl;
-    cout << "Enter your choice: ";
+    cout << "\n====== RecipeHub - Main Menu ======\n";
+    cout << "1. Add Recipe\n";
+    cout << "2. View All Recipes\n";
+    cout << "3. Delete Recipe\n";
+    cout << "4. Search Recipes\n";
+    cout << "5. Exit\n";
+    cout << "Choose an option: ";
 }
 
 void viewRecipes() {
     ifstream file("recipes.txt");
     string line;
+    int lineCount = 0;
+
     if (file.is_open()) {
-        cout << "\n===============================" << endl;
-        cout << "        Saved Recipes          " << endl;
-        cout << "===============================" << endl;
+        cout << "\n📖 Saved Recipes:\n";
         while (getline(file, line)) {
-            if (line.find("### RECIPE START ###") != string::npos) {
-                cout << "\n------------------------\n";
+            if (line == "---") {
+                cout << "----------------------------\n";
+                lineCount = 0;
+                continue;
             }
-            cout << line << endl;
+
+            if (lineCount == 0)
+                cout << "Title: " << line << "\n";
+            else if (lineCount == 1)
+                cout << "Ingredients: " << line << "\n";
+            else if (lineCount == 2)
+                cout << "Instructions: " << line << "\n";
+
+            lineCount++;
         }
-        cout << "===============================" << endl;
         file.close();
     } else {
         cout << "No recipes found.\n";
     }
+}
+
+void deleteRecipe(const string& titleToDelete) {
+    ifstream inFile("recipes.txt");
+    ofstream tempFile("temp.txt");
+
+    string title, ingredients, instructions, separator;
+    bool deleted = false;
+
+    while (getline(inFile, title)) {
+        getline(inFile, ingredients);
+        getline(inFile, instructions);
+        getline(inFile, separator);
+
+        if (title != titleToDelete) {
+            tempFile << title << "\n" << ingredients << "\n" << instructions << "\n" << separator << "\n";
+        } else {
+            deleted = true;
+        }
+    }
+
+    inFile.close();
+    tempFile.close();
+
+    remove("recipes.txt");
+    rename("temp.txt", "recipes.txt");
+
+    if (deleted) {
+        cout << "Recipe \"" << titleToDelete << "\" deleted successfully.\n";
+    } else {
+        cout << "Recipe not found.\n";
+    }
+}
+
+void searchRecipes(const string& keyword) {
+    ifstream file("recipes.txt");
+    string title, ingredients, instructions, separator;
+    bool found = false;
+
+    while (getline(file, title)) {
+        getline(file, ingredients);
+        getline(file, instructions);
+        getline(file, separator);
+
+        if (title.find(keyword) != string::npos ||
+            ingredients.find(keyword) != string::npos ||
+            instructions.find(keyword) != string::npos) {
+
+            Recipe r(title, ingredients, instructions);
+            r.displayRecipe();
+            found = true;
+        }
+    }
+    
+    if (!found)
+        cout << "No recipes found with that keyword.\n";
+
+    file.close();
 }
 
 int main() {
@@ -93,10 +159,22 @@ int main() {
         else if (choice == 2) {
             viewRecipes();
         }
-        else if (choice != 3) {
+        else if (choice == 3) {
+            string titleToDelete;
+            cout << "Enter the title of the recipe to delete: ";
+            getline(cin, titleToDelete);
+            deleteRecipe(titleToDelete);
+        }
+        else if (choice == 4) {
+            string keyword;
+            cout << "Enter keyword to search: ";
+            getline(cin, keyword);
+            searchRecipes(keyword);
+        }
+        else if (choice != 5) {
             cout << "\n*** Invalid choice. Please try again. ***\n";
         }
-    } while (choice != 3);
+    } while (choice != 5);
 
     cout << "Exiting RecipeHub. Goodbye!\n";
     return 0;
