@@ -46,7 +46,8 @@ void showMenu() {
     cout << "2. View All Recipes\n";
     cout << "3. Delete Recipe\n";
     cout << "4. Search Recipes\n";
-    cout << "5. Exit\n";
+    cout << "5. Edit Recipe\n";
+    cout << "6. Exit\n";
     cout << "Choose an option: ";
 }
 
@@ -137,6 +138,92 @@ void searchRecipes(const string& keyword) {
     file.close();
 }
 
+void editRecipe(const string& titleToEdit) {
+    ifstream inFile("recipes.txt");
+    ofstream tempFile("temp.txt");
+
+    string title, ingredients, instructions, separator;
+    bool edited = false;
+
+    while (getline(inFile, title)) {
+        getline(inFile, ingredients);
+        getline(inFile, instructions);
+        getline(inFile, separator);
+
+        if (title == titleToEdit) {
+            cout << "Editing Recipe: " << title << endl;
+            cout << "Enter new title (or press Enter to keep the same): ";
+            string newTitle;
+            getline(cin, newTitle);
+            if (!newTitle.empty()) title = newTitle;
+
+            cout << "Enter new ingredients (or press Enter to keep the same): ";
+            string newIngredients;
+            getline(cin, newIngredients);
+            if (!newIngredients.empty()) ingredients = newIngredients;
+
+            cout << "Enter new instructions (or press Enter to keep the same): ";
+            string newInstructions;
+            getline(cin, newInstructions);
+            if (!newInstructions.empty()) instructions = newInstructions;
+
+            edited = true;
+        }
+
+        tempFile << title << "\n" << ingredients << "\n" << instructions << "\n" << separator << "\n";
+    }
+
+    inFile.close();
+    tempFile.close();
+
+    remove("recipes.txt");
+    rename("temp.txt", "recipes.txt");
+
+    if (edited) {
+        cout << "Recipe \"" << titleToEdit << "\" has been edited successfully.\n";
+    } else {
+        cout << "Recipe not found.\n";
+    }
+}
+
+void backupRecipes() {
+    ifstream inFile("recipes.txt");
+    ofstream backupFile("recipes_backup.txt");
+
+    if (!inFile || !backupFile) {
+        cout << "Error: Unable to perform backup.\n";
+        return;
+    }
+
+    string line;
+    while (getline(inFile, line)) {
+        backupFile << line << endl;
+    }
+
+    cout << "Recipes backed up successfully.\n";
+    inFile.close();
+    backupFile.close();
+}
+
+void restoreRecipes() {
+    ifstream backupFile("recipes_backup.txt");
+    ofstream inFile("recipes.txt");
+
+    if (!backupFile || !inFile) {
+        cout << "Error: Unable to restore from backup.\n";
+        return;
+    }
+
+    string line;
+    while (getline(backupFile, line)) {
+        inFile << line << endl;
+    }
+
+    cout << "Recipes restored successfully.\n";
+    backupFile.close();
+    inFile.close();
+}
+
 int main() {
     int choice;
     do {
@@ -171,10 +258,16 @@ int main() {
             getline(cin, keyword);
             searchRecipes(keyword);
         }
-        else if (choice != 5) {
+        else if (choice == 5) {
+            string titleToEdit;
+            cout << "Enter the title of the recipe to edit: ";
+            getline(cin, titleToEdit);
+            editRecipe(titleToEdit);
+        }
+        else if (choice != 6) {
             cout << "\n*** Invalid choice. Please try again. ***\n";
         }
-    } while (choice != 5);
+    } while (choice != 6);
 
     cout << "Exiting RecipeHub. Goodbye!\n";
     return 0;
