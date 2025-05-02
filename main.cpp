@@ -54,25 +54,32 @@ void showMenu() {
 void viewRecipes() {
     ifstream file("recipes.txt");
     string line;
-    int lineCount = 0;
+    bool insideRecipe = false;
+    string title, ingredients, instructions;
 
     if (file.is_open()) {
-        cout << "\n📖 Saved Recipes:\n";
+        cout << "\nSaved Recipes:\n";
         while (getline(file, line)) {
-            if (line == "---") {
-                cout << "----------------------------\n";
-                lineCount = 0;
-                continue;
+            if (line == "### RECIPE START ###") {
+                insideRecipe = true;
+                title = ingredients = instructions = "";
             }
 
-            if (lineCount == 0)
-                cout << "Title: " << line << "\n";
-            else if (lineCount == 1)
-                cout << "Ingredients: " << line << "\n";
-            else if (lineCount == 2)
-                cout << "Instructions: " << line << "\n";
+            else if (line.find("Title: ") == 0) {
+                title = line.substr(7);
+            }
+            else if (line.find("Ingredients: ") == 0) {
+                ingredients = line.substr(13);
+            }
+            else if (line.find("Instructions: ") == 0) {
+                instructions = line.substr(14);
+            }
+            else if (line == "### RECIPE END ###" && insideRecipe) {
+                Recipe r(title, ingredients, instructions);
+                r.displayRecipe();
+                insideRecipe = false;
+            }
 
-            lineCount++;
         }
         file.close();
     } else {
@@ -84,18 +91,36 @@ void deleteRecipe(const string& titleToDelete) {
     ifstream inFile("recipes.txt");
     ofstream tempFile("temp.txt");
 
-    string title, ingredients, instructions, separator;
-    bool deleted = false;
+    string line;
+    bool insideRecipe = false;
+    bool recipeFound = false;
+    string currentRecipeBlock = "";
+    string currentTitle = "";
 
-    while (getline(inFile, title)) {
-        getline(inFile, ingredients);
-        getline(inFile, instructions);
-        getline(inFile, separator);
-
-        if (title != titleToDelete) {
-            tempFile << title << "\n" << ingredients << "\n" << instructions << "\n" << separator << "\n";
-        } else {
-            deleted = true;
+    while (getline(inFile, line)) {
+        if (line == "### RECIPE START ###") {
+            insideRecipe = true;
+            currentRecipeBlock = line + "\n";
+            currentTitle = "";
+        }
+        else if (insideRecipe && line.find("Title: ") == 0) {
+            currentTitle = line.substr(7);
+            currentRecipeBlock += line + "\n";
+        }
+        else if (insideRecipe) {
+            currentRecipeBlock += line + "\n";
+            if (line == "### RECIPE END ###") {
+                insideRecipe = false;
+                if (currentTitle == titleToDelete) {
+                    recipeFound = true;
+                } else {
+                    tempFile << currentRecipeBlock;
+                }
+                currentRecipeBlock = "";
+            }
+        }
+        else {
+            tempFile << line << "\n";
         }
     }
 
@@ -104,8 +129,7 @@ void deleteRecipe(const string& titleToDelete) {
 
     remove("recipes.txt");
     rename("temp.txt", "recipes.txt");
-
-    if (deleted) {
+    if (recipeFound) {
         cout << "Recipe \"" << titleToDelete << "\" deleted successfully.\n";
     } else {
         cout << "Recipe not found.\n";
@@ -114,24 +138,39 @@ void deleteRecipe(const string& titleToDelete) {
 
 void searchRecipes(const string& keyword) {
     ifstream file("recipes.txt");
-    string title, ingredients, instructions, separator;
+    string line;
+    string title, ingredients, instructions;
+    bool insideRecipe = false;
     bool found = false;
 
-    while (getline(file, title)) {
-        getline(file, ingredients);
-        getline(file, instructions);
-        getline(file, separator);
+    while (getline(file, line)) {
+        if (line == "### RECIPE START ###") {
+            insideRecipe = true;
+            title = ingredients = instructions = "";
+        }
+        else if (insideRecipe && line.find("Title: ") == 0) {
+            title = line.substr(7);
+        }
+        else if (insideRecipe && line.find("Ingredients: ") == 0) {
+            ingredients = line.substr(13);
+        }
+        else if (insideRecipe && line.find("Instructions: ") == 0) {
+            instructions = line.substr(13);
+        }
+        else if (line == "### RECIPE END ###") {
+            insideRecipe = false;
 
-        if (title.find(keyword) != string::npos ||
-            ingredients.find(keyword) != string::npos ||
-            instructions.find(keyword) != string::npos) {
-
-            Recipe r(title, ingredients, instructions);
-            r.displayRecipe();
-            found = true;
+            if (title.find(keyword) != string::npos ||
+                ingredients.find(keyword) != string::npos ||
+                instructions.find(keyword) != string::npos) {
+                
+                Recipe recipe(title, ingredients, instructions);
+                recipe.displayRecipe();
+                found = true;
+            }
         }
     }
-    
+
     if (!found)
         cout << "No recipes found with that keyword.\n";
 
@@ -142,35 +181,41 @@ void editRecipe(const string& titleToEdit) {
     ifstream inFile("recipes.txt");
     ofstream tempFile("temp.txt");
 
-    string title, ingredients, instructions, separator;
+    string line;
+    string title, ingredients, instructions;
+    bool insideRecipe = false;
     bool edited = false;
 
-    while (getline(inFile, title)) {
-        getline(inFile, ingredients);
-        getline(inFile, instructions);
-        getline(inFile, separator);
-
-        if (title == titleToEdit) {
-            cout << "Editing Recipe: " << title << endl;
-            cout << "Enter new title (or press Enter to keep the same): ";
-            string newTitle;
-            getline(cin, newTitle);
-            if (!newTitle.empty()) title = newTitle;
-
-            cout << "Enter new ingredients (or press Enter to keep the same): ";
-            string newIngredients;
-            getline(cin, newIngredients);
-            if (!newIngredients.empty()) ingredients = newIngredients;
-
-            cout << "Enter new instructions (or press Enter to keep the same): ";
-            string newInstructions;
-            getline(cin, newInstructions);
-            if (!newInstructions.empty()) instructions = newInstructions;
-
-            edited = true;
+    while (getline(inFile, line)) {
+        if (line == "### RECIPE START ###") {
+            insideRecipe = true;
+            tempFile << line << "\n";
         }
+        else if (insideRecipe && line.find("Title: ") == 0) {
+            title = line.substr(7);
+            if (title == titleToEdit) {
+                cout << "Enter new ingredients: ";
+                getline(cin, ingredients);
+                cout << "Enter new instructions: ";
+                getline(cin, instructions);
 
-        tempFile << title << "\n" << ingredients << "\n" << instructions << "\n" << separator << "\n";
+                tempFile << "Title: " << title << "\n";
+                tempFile << "Ingredients: " << ingredients << "\n";
+                tempFile << "Instructions: " << instructions << "\n";
+                edited = true;
+
+                getline(inFile, line);
+                getline(inFile, line);
+            } else {
+                tempFile << line << "\n";
+            }
+        }
+        else {
+            tempFile << line << "\n";
+            if (line == "### RECIPE END ###") {
+                insideRecipe = false;
+            }
+        }
     }
 
     inFile.close();
@@ -179,11 +224,10 @@ void editRecipe(const string& titleToEdit) {
     remove("recipes.txt");
     rename("temp.txt", "recipes.txt");
 
-    if (edited) {
-        cout << "Recipe \"" << titleToEdit << "\" has been edited successfully.\n";
-    } else {
+    if (edited)
+        cout << "Recipe \"" << titleToEdit << "\" updated successfully.\n";
+    else
         cout << "Recipe not found.\n";
-    }
 }
 
 void backupRecipes() {
